@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitLife - Your Health & Fitness Journey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            transform: translateY(-2px);
+            text-shadow: 0 2px 10px rgba(255,255,255,0.5);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 150px 2rem 100px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>');
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100px); }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s 0.2s backwards;
+        }
+
+        .cta-button {
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s 0.4s backwards;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #667eea;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            margin: 1rem auto;
+            border-radius: 2px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .info-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .info-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .info-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Chatbot Styles */
+        .chatbot-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
+        }
+
+        .chatbot-container {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 420px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            z-index: 999;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chatbot-container.active {
+            display: flex;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .close-chat {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .close-chat:hover {
+            transform: rotate(90deg);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            white-space: pre-line;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .exercise-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .exercise-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .exercise-card h4 {
+            color: #667eea;
+            margin: 8px 0 4px 0;
+            font-size: 1rem;
+            text-transform: capitalize;
+        }
+
+        .exercise-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin: 4px 4px 4px 0;
+        }
+
+        .quick-questions {
+            padding: 10px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .quick-question {
+            background: #f0f0f0;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-question:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .chat-input-container {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chatbot-container {
+                width: 90%;
+                right: 5%;
+                height: 70vh;
+            }
+
+            .chatbot-button {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">💪 FitLife</div>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#health-info">Health Info</a></li>
+                <li><a href="#stats">Statistics</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero" id="home">
+        <h1>Transform Your Body, Mind & Life</h1>
+        <p>Discover expert health information and start your fitness journey today</p>
+        <button class="cta-button">Get Started</button>
+    </section>
+
+    <div class="container" id="health-info">
+        <h2 class="section-title">Essential Health Information</h2>
+        
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="icon">🏃</div>
+                <h3>Cardiovascular Exercise</h3>
+                <p>Aim for at least 150 minutes of moderate aerobic activity per week. Regular cardio improves heart health, boosts mood, and helps maintain a healthy weight. Activities include walking, running, cycling, and swimming.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="icon">🏋️</div>
+                <h3>Strength Training</h3>
+                <p>Incorporate resistance training 2-3 times weekly. Building muscle increases metabolism, improves bone density, and enhances functional fitness. Focus on major muscle groups with proper form and progressive overload.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="icon">🥗</div>
+                <h3>Balanced Nutrition</h3>
+                <p>Fuel your body with whole foods rich in nutrients. Include lean proteins, complex carbohydrates, healthy fats, and plenty of fruits and vegetables. Stay hydrated with 8-10 glasses of water daily.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="icon">😴</div>
+                <h3>Quality Sleep</h3>
+                <p>Prioritize 7-9 hours of sleep each night. Quality rest is crucial for muscle recovery, hormone regulation, and mental clarity. Establish a consistent sleep schedule and create a relaxing bedtime routine.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="icon">🧘</div>
+                <h3>Mental Wellness</h3>
+                <p>Practice stress management through meditation, yoga, or breathing exercises. Mental health is integral to overall fitness. Take time for activities you enjoy and maintain social connections.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="icon">📊</div>
+                <h3>Track Your Progress</h3>
+                <p>Monitor your fitness journey with measurable goals. Track workouts, nutrition, and body measurements. Regular assessment helps maintain motivation and adjust your approach as needed.</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="stats" id="stats">
+        <h2 class="section-title" style="color: white;">Health by the Numbers</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">150+</div>
+                <div class="stat-label">Minutes Weekly Exercise Recommended</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">8-10</div>
+                <div class="stat-label">Glasses of Water Daily</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">7-9</div>
+                <div class="stat-label">Hours of Sleep Needed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5+</div>
+                <div class="stat-label">Servings of Fruits & Veggies</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chatbot Button -->
+    <button class="chatbot-button" id="chatbotBtn">💬</button>
+
+    <!-- Chatbot Container -->
+    <div class="chatbot-container" id="chatbotContainer">
+        <div class="chatbot-header">
+            <h3>🏥 Health & Exercise Assistant</h3>
+            <button class="close-chat" id="closeChat">×</button>
+        </div>
+
+        <div class="quick-questions" id="quickQuestions">
+            <button class="quick-question">Show chest exercises</button>
+            <button class="quick-question">Bicep workouts</button>
+            <button class="quick-question">Leg exercises</button>
+            <button class="quick-question">Back workouts</button>
+            <button class="quick-question">Cardio exercises</button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">Hi! 👋 I'm your FitLife Health & Exercise Assistant. I can show you exercises for any muscle group, provide workout advice, and answer your fitness questions. Try asking "Show me chest exercises" or any health question!</div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask about exercises or health...">
+            <button class="send-button" id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <footer id="contact">
+        <p>&copy; 2025 FitLife. Your journey to better health starts here.</p>
+        <p>Consult with healthcare professionals before starting any new fitness program.</p>
+    </footer>
+
+    <script>
+        // ExerciseDB API Configuration
+        const EXERCISE_API_KEY = 'bd0bf5cdb7mshfba7e0c8e15e093p1f2ec7jsne8d74e99af7d';
+        const EXERCISE_API_HOST = 'exercisedb.p.rapidapi.com';
+        const EXERCISE_API_URL = 'https://exercisedb.p.rapidapi.com';
+
+        // Chatbot elements
+        const chatbotBtn = document.getElementById('chatbotBtn');
+        const chatbotContainer = document.getElementById('chatbotContainer');
+        const closeChat = document.getElementById('closeChat');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const quickQuestions = document.querySelectorAll('.quick-question');
+
+        // Toggle chatbot
+        chatbotBtn.addEventListener('click', () => {
+            chatbotContainer.classList.add('active');
+            chatInput.focus();
+        });
+
+        closeChat.addEventListener('click', () => {
+            chatbotContainer.classList.remove('active');
+        });
+
+        // Fetch exercises from API
+        async function fetchExercises(bodyPart) {
+            try {
+                const response = await fetch(`${EXERCISE_API_URL}/exercises/bodyPart/${bodyPart}?limit=3`, {
+                    method: 'GET',
+                    headers: {
+                        'X-RapidAPI-Key': EXERCISE_API_KEY,
+                        'X-RapidAPI-Host': EXERCISE_API_HOST
+                    }
+                });
+                
+                if (!response.ok) throw new Error('API request failed');
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching exercises:', error);
+                return null;
+            }
+        }
+
+        // Create exercise card HTML
+        function createExerciseCard(exercise) {
+            return `
+                <div class="exercise-card">
+                    <img src="${exercise.gifUrl}" alt="${exercise.name}" loading="lazy">
+                    <h4>${exercise.name}</h4>
+                    <div>
+                        <span class="exercise-badge">${exercise.bodyPart}</span>
+                        <span class="exercise-badge">${exercise.target}</span>
+                        <span class="exercise-badge">${exercise.equipment}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Health knowledge base
+        const healthKnowledge = {
+            exercise: {
+                keywords: ['exercise', 'workout', 'training', 'fitness', 'start exercising', 'begin'],
+                response: "Start with just 10-15 minutes a day! Begin with activities you enjoy like walking, dancing, or cycling. Gradually increase duration and intensity. The key is consistency - aim for 3-4 days per week initially.\n\nTry asking me to 'show chest exercises' or 'show leg workouts' to see specific exercises!"
+            },
+            water: {
+                keywords: ['water', 'hydration', 'drink', 'hydrate'],
+                response: "Aim for 8-10 glasses (about 2-2.5 liters) of water daily. Increase intake if you exercise, live in hot climate, or are very active. Signs you're well-hydrated: clear or light yellow urine.\n\nEasy tips:\n• Drink a glass when you wake up\n• Have water with each meal\n• Carry a reusable bottle"
+            },
+            nutrition: {
+                keywords: ['nutrition', 'diet', 'eat', 'food', 'healthy eating', 'meal', 'budget'],
+                response: "Healthy eating on a budget:\n• Buy seasonal produce\n• Choose frozen vegetables (equally nutritious)\n• Buy whole grains in bulk\n• Plan meals weekly\n• Cook at home\n• Use eggs for cheap protein\n\nBuild balanced plates: 1/2 vegetables, 1/4 protein, 1/4 grains"
+            },
+            sleep: {
+                keywords: ['sleep', 'rest', 'tired', 'insomnia', 'bedtime'],
+                response: "Adults need 7-9 hours of quality sleep. Better sleep tips:\n• Same bedtime/wake time daily\n• No screens 1 hour before bed\n• Cool, dark room (60-67°F)\n• No caffeine after 2 PM\n• Relaxing bedtime routine\n\nSleep is when your body recovers and repairs!"
+            },
+            motivation: {
+                keywords: ['consistent', 'motivation', 'stay motivated', 'give up', 'discipline'],
+                response: "Tips for staying consistent:\n• Start small (10 min workouts)\n• Schedule it like appointments\n• Find an accountability partner\n• Track your progress\n• Celebrate small wins\n• Focus on progress, not perfection!\n\nIt takes 21 days to form a habit. You've got this! 💪"
+            }
+        };
+
+        // Body part mapping for API
+        const bodyPartMapping = {
+            'chest': 'chest',
+            'back': 'back',
+            'legs': 'legs',
+            'leg': 'legs',
+            'arms': 'upper arms',
+            'arm': 'upper arms',
+            'bicep': 'upper arms',
+            'biceps': 'upper arms',
+            'tricep': 'upper arms',
+            'triceps': 'upper arms',
+            'shoulders': 'shoulders',
+            'shoulder': 'shoulders',
+            'abs': 'waist',
+            'core': 'waist',
+            'cardio': 'cardio',
+            'glutes': 'upper legs',
+            'calves': 'lower legs',
+            'forearms': 'lower arms'
+        };
+
+        // Get bot response
+        async function getBotResponse(userMessage) {
+            const message = userMessage.toLowerCase();
+            
+            // Check if asking for exercises
+            if (message.includes('show') || message.includes('exercise') || message.includes('workout')) {
+                for (const [keyword, bodyPart] of Object.entries(bodyPartMapping)) {
+                    if (message.includes(keyword)) {
+                        const exercises = await fetchExercises(bodyPart);
+                        
+                        if (exercises && exercises.length > 0) {
+                            let response = `Here are some great ${keyword} exercises for you:\n\n`;
+                            let exerciseCards = '';
+                            
+                            exercises.forEach(exercise => {
+                                exerciseCards += createExerciseCard(exercise);
+                            });
+                            
+                            return {
+                                text: response,
+                                html: exerciseCards
+                            };
+                        } else {
+                            return {
+                                text: `I couldn't find exercises for ${keyword} right now. Try asking about: chest, back, legs, arms, shoulders, or cardio exercises!`,
+                                html: null
+                            };
+                        }
+                    }
+                }
+            }
+            
+            // Check health knowledge base
+            for (const category in healthKnowledge) {
+                const { keywords, response } = healthKnowledge[category];
+                if (keywords.some(keyword => message.includes(keyword))) {
+                    return { text: response, html: null };
+                }
+            }
+            
+            // Default response
+            return {
+                text: "I can help you with:\n\n🏋️ Exercise demonstrations (try: 'show chest exercises')\n💪 Workout advice\n🥗 Nutrition tips\n💧 Hydration guidance\n😴 Sleep recommendations\n🎯 Motivation tips\n\nWhat would you like to know?",
+                html: null
+            };
+        }
+
+        // Add message to chat
+        function addMessage(text, isUser = false, htmlContent = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (htmlContent) {
+                contentDiv.innerHTML = text + htmlContent;
+            } else {
+                contentDiv.textContent = text;
+            }
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typing-indicator';
+            
+            const typingContent = document.createElement('div');
+            typingContent.className = 'typing-indicator active';
+            typingContent.innerHTML = '<span></span><span></span><span></span>';
+            
+            typingDiv.appendChild(typingContent);
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        // Handle sending message
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            chatInput.value = '';
+            sendBtn.disabled = true;
+
+            showTypingIndicator();
+
+            const response = await getBotResponse(message);
+            
+            setTimeout(() => {
+                removeTypingIndicator();
+                addMessage(response.text, false, response.html);
+                sendBtn.disabled = false;
