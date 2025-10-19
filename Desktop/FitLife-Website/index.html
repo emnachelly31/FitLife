@@ -415,6 +415,132 @@
             margin: 4px 4px 4px 0;
         }
 
+        /* Plan Form Styles */
+        .plan-form {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .generate-plan-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .generate-plan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            margin-top: 15px;
+        }
+
+        .day-card {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .day-title {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .day-date {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .activity-section {
+            margin-bottom: 12px;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-content {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            padding-left: 28px;
+        }
+
+        .activity-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .activity-list li {
+            padding: 4px 0;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .activity-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
         .quick-questions {
             padding: 10px 20px;
             background: white;
@@ -574,7 +700,8 @@
     <section class="hero" id="home">
         <h1>Transform Your Body, Mind & Life</h1>
         <p>Discover expert health information and start your fitness journey today</p>
-        <button class="cta-button">Get Started</button>
+        <a href="plan-page.html" class="cta-button">Get Started</a>
+
     </section>
 
     <div class="container" id="health-info">
@@ -652,11 +779,10 @@
         </div>
 
         <div class="quick-questions" id="quickQuestions">
+            <button class="quick-question">Create my plan</button>
             <button class="quick-question">Show chest exercises</button>
-            <button class="quick-question">Bicep workouts</button>
             <button class="quick-question">Leg exercises</button>
-            <button class="quick-question">Back workouts</button>
-            <button class="quick-question">Cardio exercises</button>
+            <button class="quick-question">Nutrition tips</button>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -690,6 +816,16 @@
         const sendBtn = document.getElementById('sendBtn');
         const chatMessages = document.getElementById('chatMessages');
         const quickQuestions = document.querySelectorAll('.quick-question');
+
+        // User data storage
+        let userData = {
+            weight: null,
+            goal: null,
+            activityLevel: null
+        };
+
+        let isCollectingData = false;
+        let dataStep = 0;
 
         // Toggle chatbot
         chatbotBtn.addEventListener('click', () => {
@@ -787,6 +923,93 @@
         async function getBotResponse(userMessage) {
             const message = userMessage.toLowerCase();
             
+            // Check if user wants to create a personalized plan
+            if (message.includes('plan') || message.includes('calendar') || message.includes('create my plan') || message.includes('personnalisé') || message.includes('personalized')) {
+                isCollectingData = true;
+                dataStep = 1;
+                return {
+                    text: "Génial! 🎯 Je vais créer un plan personnalisé pour vous.\n\nCommençons:\n\n1️⃣ Quel est votre poids actuel? (en kg)",
+                    html: null
+                };
+            }
+
+            // Collecting user data step by step
+            if (isCollectingData) {
+                if (dataStep === 1) {
+                    const weight = parseFloat(message);
+                    if (weight && weight > 30 && weight < 300) {
+                        userData.weight = weight;
+                        dataStep = 2;
+                        return {
+                            text: `Parfait! Poids: ${weight}kg ✓\n\n2️⃣ Quel est votre objectif?\n\nTapez le numéro:\n1 - Perdre du poids\n2 - Prendre du muscle\n3 - Rester en forme\n4 - Améliorer l'endurance`,
+                            html: null
+                        };
+                    } else {
+                        return {
+                            text: "Veuillez entrer un poids valide en kg (ex: 70)",
+                            html: null
+                        };
+                    }
+                }
+
+                if (dataStep === 2) {
+                    const goalMap = {
+                        '1': 'weight_loss',
+                        '2': 'muscle_gain',
+                        '3': 'maintenance',
+                        '4': 'endurance',
+                        'perdre': 'weight_loss',
+                        'maigrir': 'weight_loss',
+                        'muscle': 'muscle_gain',
+                        'musculation': 'muscle_gain',
+                        'forme': 'maintenance',
+                        'endurance': 'endurance'
+                    };
+
+                    for (let key in goalMap) {
+                        if (message.includes(key)) {
+                            userData.goal = goalMap[key];
+                            dataStep = 3;
+                            return {
+                                text: `Objectif enregistré! ✓\n\n3️⃣ Niveau d'activité actuel?\n\nTapez le numéro:\n1 - Sédentaire (peu ou pas d'exercice)\n2 - Légèrement actif (1-3 jours/semaine)\n3 - Modérément actif (3-5 jours/semaine)\n4 - Très actif (6-7 jours/semaine)`,
+                                html: null
+                            };
+                        }
+                    }
+                    return {
+                        text: "Veuillez choisir un objectif (1, 2, 3 ou 4)",
+                        html: null
+                    };
+                }
+
+                if (dataStep === 3) {
+                    const activityMap = {
+                        '1': 'sedentary',
+                        '2': 'light',
+                        '3': 'moderate',
+                        '4': 'very_active'
+                    };
+
+                    if (activityMap[message.trim()]) {
+                        userData.activityLevel = activityMap[message.trim()];
+                        isCollectingData = false;
+                        dataStep = 0;
+                        
+                        // Generate personalized plan
+                        const plan = generatePersonalizedPlan(userData);
+                        return {
+                            text: "🎉 Votre plan personnalisé est prêt!\n\n",
+                            html: plan
+                        };
+                    } else {
+                        return {
+                            text: "Veuillez choisir un niveau d'activité (1, 2, 3 ou 4)",
+                            html: null
+                        };
+                    }
+                }
+            }
+            
             // Check if asking for exercises
             if (message.includes('show') || message.includes('exercise') || message.includes('workout')) {
                 for (const [keyword, bodyPart] of Object.entries(bodyPartMapping)) {
@@ -794,7 +1017,7 @@
                         const exercises = await fetchExercises(bodyPart);
                         
                         if (exercises && exercises.length > 0) {
-                            let response = `Here are some great ${keyword} exercises for you:\n\n`;
+                            let response = `Voici des exercices ${keyword} pour vous:\n\n`;
                             let exerciseCards = '';
                             
                             exercises.forEach(exercise => {
@@ -807,7 +1030,7 @@
                             };
                         } else {
                             return {
-                                text: `I couldn't find exercises for ${keyword} right now. Try asking about: chest, back, legs, arms, shoulders, or cardio exercises!`,
+                                text: `Je n'ai pas trouvé d'exercices pour ${keyword}. Essayez: chest, back, legs, arms, shoulders, cardio!`,
                                 html: null
                             };
                         }
@@ -825,9 +1048,241 @@
             
             // Default response
             return {
-                text: "I can help you with:\n\n🏋️ Exercise demonstrations (try: 'show chest exercises')\n💪 Workout advice\n🥗 Nutrition tips\n💧 Hydration guidance\n😴 Sleep recommendations\n🎯 Motivation tips\n\nWhat would you like to know?",
+                text: "Je peux vous aider avec:\n\n📅 Créer un plan personnalisé (dites 'create my plan')\n🏋️ Exercices par muscle\n🥗 Conseils nutrition\n💧 Hydratation\n😴 Sommeil\n\nQue souhaitez-vous?",
                 html: null
             };
+        }
+
+        // Generate personalized weekly plan
+        function generatePersonalizedPlan(data) {
+            const { weight, goal, activityLevel } = data;
+            
+            // Calculate daily calories
+            let calories = calculateCalories(weight, goal, activityLevel);
+            
+            // Calculate water intake (ml)
+            let waterIntake = Math.round(weight * 35);
+            
+            // Calculate protein (grams)
+            let protein = Math.round(weight * (goal === 'muscle_gain' ? 2 : 1.6));
+            
+            // Get goal-specific recommendations
+            const goalInfo = getGoalInfo(goal);
+            
+            // Days of week
+            const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            
+            let planHTML = `
+                <div class="calendar-container">
+                    <div class="day-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                        <h3 style="margin: 0 0 10px 0;">📊 Votre Profil</h3>
+                        <div style="font-size: 0.9rem; line-height: 1.8;">
+                            <div>🎯 Objectif: <strong>${goalInfo.name}</strong></div>
+                            <div>⚖️ Poids: <strong>${weight}kg</strong></div>
+                            <div>🔥 Calories: <strong>${calories} kcal/jour</strong></div>
+                            <div>💧 Eau: <strong>${Math.round(waterIntake/250)} verres (${waterIntake}ml)</strong></div>
+                            <div>🥩 Protéines: <strong>${protein}g/jour</strong></div>
+                        </div>
+                    </div>
+            `;
+            
+            // Generate 7-day plan
+            days.forEach((day, index) => {
+                const workout = getWorkoutForDay(index, goal);
+                const meals = getMealsForGoal(goal, calories);
+                const steps = getStepsForGoal(goal, activityLevel);
+                
+                planHTML += `
+                    <div class="day-card">
+                        <div class="day-header">
+                            <span class="day-title">${day}</span>
+                            <span class="day-date">Jour ${index + 1}</span>
+                        </div>
+                        
+                        <div class="activity-section">
+                            <div class="activity-title">🏋️ Entraînement</div>
+                            <div class="activity-content">${workout}</div>
+                        </div>
+                        
+                        <div class="activity-section">
+                            <div class="activity-title">🥗 Repas</div>
+                            <div class="activity-content">
+                                <ul class="activity-list">
+                                    ${meals.map(meal => `<li>${meal}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-section">
+                            <div class="activity-title">👟 Objectif Steps</div>
+                            <div class="activity-content">${steps} pas</div>
+                        </div>
+                        
+                        <div class="activity-section">
+                            <div class="activity-title">💧 Hydratation</div>
+                            <div class="activity-content">${Math.round(waterIntake/250)} verres d'eau (${waterIntake}ml)</div>
+                        </div>
+                        
+                        <div class="activity-section">
+                            <div class="activity-title">💡 Conseil du jour</div>
+                            <div class="activity-content">${getDailyTip(index)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            planHTML += '</div>';
+            return planHTML;
+        }
+
+        // Calculate daily calories based on user data
+        function calculateCalories(weight, goal, activityLevel) {
+            // Base metabolic rate (simplified Harris-Benedict)
+            let bmr = weight * 24;
+            
+            // Activity multipliers
+            const activityMultipliers = {
+                'sedentary': 1.2,
+                'light': 1.375,
+                'moderate': 1.55,
+                'very_active': 1.725
+            };
+            
+            let tdee = bmr * activityMultipliers[activityLevel];
+            
+            // Adjust based on goal
+            const goalAdjustments = {
+                'weight_loss': -500,
+                'muscle_gain': 300,
+                'maintenance': 0,
+                'endurance': 200
+            };
+            
+            return Math.round(tdee + goalAdjustments[goal]);
+        }
+
+        // Get goal information
+        function getGoalInfo(goal) {
+            const goals = {
+                'weight_loss': { name: 'Perte de poids', focus: 'Déficit calorique + cardio' },
+                'muscle_gain': { name: 'Prise de muscle', focus: 'Surplus calorique + musculation' },
+                'maintenance': { name: 'Maintien de forme', focus: 'Équilibre + exercice varié' },
+                'endurance': { name: 'Amélioration endurance', focus: 'Cardio progressif' }
+            };
+            return goals[goal];
+        }
+
+        // Get workout for specific day
+        function getWorkoutForDay(dayIndex, goal) {
+            const workouts = {
+                'weight_loss': [
+                    '30 min cardio (course/vélo) + 15 min abdos',
+                    '45 min marche rapide + stretching',
+                    'HIIT 20 min (intervals haute intensité)',
+                    'Repos actif - Yoga 20 min',
+                    '40 min natation ou vélo',
+                    'Circuit training full body 30 min',
+                    'Repos - Marche légère 30 min'
+                ],
+                'muscle_gain': [
+                    'Pectoraux + Triceps (8-12 reps, 4 séries)',
+                    'Dos + Biceps (8-12 reps, 4 séries)',
+                    'Repos actif - Stretching léger',
+                    'Jambes + Épaules (8-12 reps, 4 séries)',
+                    'Upper body complet (10-15 reps)',
+                    'Cardio léger 20 min + abdos',
+                    'Repos complet'
+                ],
+                'maintenance': [
+                    'Full body workout 30 min',
+                    'Cardio 30 min + core',
+                    'Upper body strength',
+                    'Yoga ou Pilates 40 min',
+                    'Lower body + cardio',
+                    'Sport de loisir (foot, basket, etc.)',
+                    'Repos - Marche'
+                ],
+                'endurance': [
+                    'Course 30 min tempo modéré',
+                    'Intervalles 20 min (sprint/récup)',
+                    'Cross-training 40 min',
+                    'Repos actif - Vélo tranquille',
+                    'Long run 45-60 min allure lente',
+                    'Hill training 30 min',
+                    'Repos complet'
+                ]
+            };
+            
+            return workouts[goal][dayIndex];
+        }
+
+        // Get meals for goal
+        function getMealsForGoal(goal, calories) {
+            const mealTemplates = {
+                'weight_loss': [
+                    'Petit-déj: Omelette (2 œufs) + légumes + 1 toast complet',
+                    'Collation: Pomme + poignée d\'amandes',
+                    'Déjeuner: Poulet grillé + quinoa + salade verte',
+                    'Collation: Yaourt grec 0% + baies',
+                    'Dîner: Poisson + légumes vapeur + patate douce'
+                ],
+                'muscle_gain': [
+                    'Petit-déj: 3 œufs + avoine + banane + beurre cacahuète',
+                    'Collation: Shake protéiné + fruits secs',
+                    'Déjeuner: Bœuf/poulet + riz complet + légumes + avocat',
+                    'Collation: Fromage blanc + miel + noix',
+                    'Dîner: Saumon + patates douces + brocolis + huile olive'
+                ],
+                'maintenance': [
+                    'Petit-déj: Porridge + fruits + noix',
+                    'Collation: Smoothie fruits + épinards',
+                    'Déjeuner: Bowl équilibré (protéine + grain + légumes)',
+                    'Collation: Houmous + carottes',
+                    'Dîner: Plat varié équilibré'
+                ],
+                'endurance': [
+                    'Petit-déj: Pancakes avoine + miel + fruits',
+                    'Collation: Banane + beurre amande',
+                    'Déjeuner: Pâtes complètes + poulet + légumes',
+                    'Collation: Barre énergétique maison',
+                    'Dîner: Riz + poisson + légumes verts'
+                ]
+            };
+            
+            return mealTemplates[goal];
+        }
+
+        // Get steps goal
+        function getStepsForGoal(goal, activityLevel) {
+            const baseSteps = {
+                'sedentary': 6000,
+                'light': 8000,
+                'moderate': 10000,
+                'very_active': 12000
+            };
+            
+            const goalBonus = {
+                'weight_loss': 2000,
+                'muscle_gain': 0,
+                'maintenance': 1000,
+                'endurance': 3000
+            };
+            
+            return baseSteps[activityLevel] + goalBonus[goal];
+        }
+
+        // Get daily tip
+        function getDailyTip(dayIndex) {
+            const tips = [
+                '💪 Échauffez-vous toujours avant l\'entraînement (5-10 min)',
+                '😴 Dormez 7-9h pour une récupération optimale',
+                '🥗 Préparez vos repas à l\'avance pour rester sur la bonne voie',
+                '📸 Prenez des photos pour suivre vos progrès visuels',
+                '🎯 La constance bat la perfection - continuez!',
+                '💧 Buvez de l\'eau dès le réveil pour réhydrater votre corps',
+                '🧘 Prenez ce jour de repos au sérieux - le corps récupère!'
+            ];
+            return tips[dayIndex];
         }
 
         // Add message to chat

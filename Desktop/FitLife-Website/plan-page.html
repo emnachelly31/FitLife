@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitLife - Mon Plan Personnalisé</title>
+    <style>
+        /* Your existing CSS styles remain the same */
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --light: #f8f9fa;
+            --dark: #2d3748;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        .plan-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-title {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            display: block;
+            margin-top: 1rem;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .calendar-week {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .day-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .day-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .day-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .activity-section {
+            margin-bottom: 1rem;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .activity-content {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+
+        .profile-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .print-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 2rem;
+        }
+
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .api-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .api-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .api-warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .api-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .exercise-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .calendar-week {
+                grid-template-columns: 1fr;
+            }
+            .profile-card {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">💪 FitLife</div>
+            <ul>
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="#health-info">Infos Santé</a></li>
+                <li><a href="#">Mon Plan</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <section class="hero">
+            <h1>Créez Votre Plan Personnalisé</h1>
+            <p>Obtenez un programme d'entraînement et de nutrition adapté à vos objectifs, votre niveau et vos préférences</p>
+        </section>
+
+        <div class="plan-card">
+            <div class="form-section">
+                <h2 class="form-title">📝 Vos Informations</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="weight">Votre Poids (kg)</label>
+                        <input type="number" id="weight" placeholder="Ex: 70" min="30" max="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Votre Taille (cm)</label>
+                        <input type="number" id="height" placeholder="Ex: 170" min="100" max="250">
+                    </div>
+                    <div class="form-group">
+                        <label for="goal">Votre Objectif</label>
+                        <select id="goal">
+                            <option value="">Choisissez...</option>
+                            <option value="weight_loss">Perte de poids</option>
+                            <option value="muscle_gain">Prise de muscle</option>
+                            <option value="maintenance">Maintien de forme</option>
+                            <option value="endurance">Amélioration endurance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="activity">Niveau d'Activité</label>
+                        <select id="activity">
+                            <option value="">Choisissez...</option>
+                            <option value="sedentary">Sédentaire</option>
+                            <option value="light">Légèrement actif</option>
+                            <option value="moderate">Modérément actif</option>
+                            <option value="very_active">Très actif</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="diet">Préférences Alimentaires</label>
+                        <select id="diet">
+                            <option value="">Choisissez...</option>
+                            <option value="standard">Alimentation standard</option>
+                            <option value="vegetarian">Végétarienne</option>
+                            <option value="vegan">Végane</option>
+                            <option value="low_carbs">Pauvre en glucides</option>
+                            <option value="high_protein">Riche en protéines</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="generate-btn" id="generatePlanBtn">Générer Mon Plan</button>
+                <div id="apiStatus" class="api-status"></div>
+            </div>
+
+            <div class="results-section print-area" id="resultsSection">
+                <div class="profile-card no-print">
+                    <div class="profile-info">
+                        <h3>Votre Profil Fitness</h3>
+                        <p>Plan personnalisé basé sur vos informations</p>
+                    </div>
+                    <div class="profile-stats" id="profileStats">
+                        <!-- Stats will be populated by JS -->
+                    </div>
+                </div>
+
+                <div id="weeklyPlan">
+                    <!-- Weekly plan will be populated by JS -->
+                </div>
+
+                <button class="print-btn no-print" id="printBtn">Imprimer Mon Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration de l'API ExerciseDB
+        const EXERCISE_API_KEY = '2912481c1bmsh9cceece9c56790ep137c8cjsn78cf41db26a9';
+        const EXERCISE_API_HOST = 'exercisedb.p.rapidapi.com';
+        
+        // Valid body parts for the API
+        const validBodyParts = [
+            'back', 'cardio', 'chest', 'lower arms', 'lower legs', 
+            'neck', 'shoulders', 'upper arms', 'upper legs', 'waist'
+        ];
+
+        // Map our goal to valid API body parts
+        const bodyPartsByGoal = {
+            'weight_loss': ['cardio', 'waist', 'lower legs'],
+            'muscle_gain': ['chest', 'back', 'upper arms', 'upper legs'],
+            'maintenance': ['chest', 'back', 'lower legs', 'waist'],
+            'endurance': ['cardio', 'upper legs', 'waist']
+        };
+
+        // Fonction pour récupérer des exercices par groupe musculaire
+        async function fetchExercisesByBodyPart(bodyPart, limit = 3) {
+            // Convert body part to API format (lowercase, spaces allowed)
+            const apiBodyPart = bodyPart.toLowerCase();
+            
+            // Validate the body part
+            if (!validBodyParts.includes(apiBodyPart)) {
+                console.warn(`Body part "${bodyPart}" is not valid for the API. Using "cardio" instead.`);
+                return await fetchExercisesByBodyPart('cardio', limit);
+            }
+
+            const url = `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${encodeURIComponent(apiBodyPart)}?limit=${limit}`;
+            
+            try {
+                console.log(`Fetching exercises for body part: ${apiBodyPart}`);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-RapidAPI-Key': EXERCISE_API_KEY,
+                        'X-RapidAPI-Host': EXERCISE_API_HOST
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(`Successfully fetched ${data.length} exercises for ${apiBodyPart}`);
+                return data;
+            } catch (error) {
+                console.error('Error fetching exercises:', error);
+                throw new Error(`Failed to fetch exercises for ${bodyPart}: ${error.message}`);
+            }
+        }
+
+        // Fonction pour récupérer tous les exercices pour un objectif
+        async function fetchAllExercisesForGoal(goal) {
+            const bodyParts = bodyPartsByGoal[goal];
+            const allExercises = [];
+            
+            for (const bodyPart of bodyParts) {
+                try {
+                    const exercises = await fetchExercisesByBodyPart(bodyPart, 2); // Get 2 exercises per body part
+                    if (exercises && exercises.length > 0) {
+                        allExercises.push(...exercises.map(ex => ({
+                            ...ex,
+                            bodyPart: bodyPart // Add bodyPart info to each exercise
+                        })));
+                    }
+                } catch (error) {
+                    console.warn(`Could not fetch exercises for ${bodyPart}:`, error.message);
+                }
+                
+                // Add a small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            return allExercises;
+        }
+
+        // Fonction pour générer un plan d'entraînement personnalisé
+        async function generateWorkoutPlan(goal) {
+            try {
+                const exercises = await fetchAllExercisesForGoal(goal);
+                
+                if (exercises.length === 0) {
+                    throw new Error('No exercises found for the selected goal');
+                }
+                
+                // Group exercises by body part
+                const groupedExercises = {};
+                exercises.forEach(exercise => {
+                    if (!groupedExercises[exercise.bodyPart]) {
+                        groupedExercises[exercise.bodyPart] = [];
+                    }
+                    groupedExercises[exercise.bodyPart].push(exercise);
+                });
+                
+                return groupedExercises;
+            } catch (error) {
+                console.error('Error generating workout plan:', error);
+                throw error;
+            }
+        }
+
+        // Fonction pour afficher le plan d'entraînement pour un jour spécifique
+        function displayWorkoutPlanForDay(workoutPlan, dayIndex) {
+            if (!workoutPlan || Object.keys(workoutPlan).length === 0) {
+                return "Aucun exercice trouvé pour aujourd'hui.";
+            }
+
+            const bodyParts = Object.keys(workoutPlan);
+            const bodyPart = bodyParts[dayIndex % bodyParts.length];
+            const exercises = workoutPlan[bodyPart];
+
+            if (!exercises || exercises.length === 0) {
+                return "Repos ou étirements légers.";
+            }
+
+            let workoutHTML = `<strong>${bodyPart.toUpperCase()}</strong>:<br>`;
+            exercises.forEach(exercise => {
+                workoutHTML += `- ${exercise.name}<br>`;
+                if (exercise.gifUrl) {
+                    workoutHTML += `<img src="${exercise.gifUrl}" alt="${exercise.name}" class="exercise-image" style="max-width: 100px; height: auto; border-radius: 5px; margin: 2px 0 5px 0;"><br>`;
+                }
+            });
+
+            return workoutHTML;
+        }
+
+        // Fonction pour générer le plan personnalisé complet
+        async function generatePersonalizedPlan() {
+            // Récupérer les informations de l'utilisateur
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const goal = document.getElementById('goal').value;
+            const activity = document.getElementById('activity').value;
+            const diet = document.getElementById('diet').value;
+
+            // Valider les entrées
+            if (!weight || !height || !goal || !activity || !diet) {
+                alert('Veuillez remplir tous les champs.');
+                return;
+            }
+
+            // Afficher le statut de l'API
+            const apiStatus = document.getElementById('apiStatus');
+            apiStatus.textContent = "Connexion à l'API ExerciseDB...";
+            apiStatus.className = "api-status api-warning";
+
+            try {
+                // Calculer les métriques de base
+                const bmi = (weight / ((height / 100) * (height / 100))).toFixed(1);
+                const calories = calculateCalories(weight, goal, activity);
+                const waterIntake = Math.round(weight * 35);
+                const protein = Math.round(weight * (goal === 'muscle_gain' ? 2 : 1.6));
+
+                // Générer le plan d'entraînement avec ExerciseDB
+                apiStatus.textContent = "Récupération des exercices depuis l'API...";
+                const workoutPlan = await generateWorkoutPlan(goal);
+
+                // Mettre à jour le statut de l'API
+                apiStatus.textContent = "✓ Plan généré avec succès avec l'API ExerciseDB!";
+                apiStatus.className = "api-status api-success";
+
+                // Mettre à jour les statistiques du profil
+                const profileStats = document.getElementById('profileStats');
+                profileStats.innerHTML = `
+                    <div class="stat-item">
+                        <span class="stat-label">Objectif</span>
+                        <span class="stat-number">${getGoalName(goal)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">IMC</span>
+                        <span class="stat-number">${bmi}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Calories</span>
+                        <span class="stat-number">${calories}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Eau (ml)</span>
+                        <span class="stat-number">${waterIntake}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Protéines (g)</span>
+                        <span class="stat-number">${protein}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Activité</span>
+                        <span class="stat-number">${getActivityName(activity)}</span>
+                    </div>
+                `;
+
+                // Générer le plan hebdomadaire
+                await generateWeeklyPlan(weight, height, goal, activity, diet, workoutPlan);
+
+                // Afficher les résultats
+                const resultsSection = document.getElementById('resultsSection');
+                resultsSection.style.display = 'block';
+
+                // Faire défiler vers les résultats
+                window.scrollTo({
+                    top: resultsSection.offsetTop - 100,
+                    behavior: 'smooth'
+                });
+
+            } catch (error) {
+                console.error('Error generating personalized plan:', error);
+                apiStatus.textContent = `❌ Erreur API: ${error.message}. Vérifiez votre connexion.`;
+                apiStatus.className = "api-status api-error";
+            }
+        }
+
+        // Fonction pour générer le plan hebdomadaire
+        async function generateWeeklyPlan(weight, height, goal, activity, diet, workoutPlan) {
+            const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            const calories = calculateCalories(weight, goal, activity);
+            const waterIntake = Math.round(weight * 35);
+
+            let planHTML = '<div class="calendar-week">';
+
+            for (let i = 0; i < days.length; i++) {
+                const day = days[i];
+                const workout = displayWorkoutPlanForDay(workoutPlan, i);
+                const meals = getMealsForGoal(goal, diet, calories);
+                const steps = getStepsForGoal(goal, activity);
+
+                planHTML += `
+                    <div class="day-card">
+                        <div class="day-header">
+                            <span class="day-title">${day}</span>
+                            <span class="day-date">Jour ${i + 1}</span>
+                        </div>
+
+                        <div class="activity-section">
+                            <div class="activity-title">🏋️ Entraînement</div>
+                            <div class="activity-content">${workout}</div>
+                        </div>
+
+                        <div class="activity-section">
+                            <div class="activity-title">🥗 Repas</div>
+                            <div class="activity-content">
+                                <ul style="padding-left: 20px;">
+                                    ${meals.map(meal => `<li style="margin-bottom: 8px;">${meal}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="activity-section">
+                            <div class="activity-title">👟 Objectif Pas</div>
+                            <div class="activity-content">${steps} pas</div>
+                        </div>
+
+                        <div class="activity-section">
+                            <div class="activity-title">💧 Hydratation</div>
+                            <div class="activity-content">${Math.round(waterIntake / 250)} verres (${waterIntake}ml)</div>
+                        </div>
+
+                        <div class="activity-section">
+                            <div class="activity-title">💡 Conseil</div>
+                            <div class="activity-content">${getDailyTip(i)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            planHTML += '</div>';
+            document.getElementById('weeklyPlan').innerHTML = planHTML;
+        }
+
+        // Fonction pour calculer les calories
+        function calculateCalories(weight, goal, activityLevel) {
+            const activityMultipliers = {
+                'sedentary': 1.2,
+                'light': 1.375,
+                'moderate': 1.55,
+                'very_active': 1.725
+            };
+
+            const goalAdjustments = {
+                'weight_loss': -500,
+                'muscle_gain': 300,
+                'maintenance': 0,
+                'endurance': 200
+            };
+
+            let bmr = weight * 24;
+            let tdee = bmr * activityMultipliers[activityLevel];
+            return Math.round(tdee + goalAdjustments[goal]);
+        }
+
+        // Fonction pour obtenir le nom de l'objectif
+        function getGoalName(goal) {
+            const goals = {
+                'weight_loss': 'Perte de poids',
+                'muscle_gain': 'Prise de muscle',
+                'maintenance': 'Maintien',
+                'endurance': 'Endurance'
+            };
+            return goals[goal];
+        }
+
+        // Fonction pour obtenir le nom du niveau d'activité
+        function getActivityName(activity) {
+            const activities = {
+                'sedentary': 'Sédentaire',
+                'light': 'Léger',
+                'moderate': 'Modéré',
+                'very_active': 'Très actif'
+            };
+            return activities[activity];
+        }
+
+        // Fonction pour obtenir les repas en fonction de l'objectif et du régime
+        function getMealsForGoal(goal, diet, calories) {
+            const mealTemplates = {
+                'standard': {
+                    'weight_loss': [
+                        'Petit-déj: Omelette 2 œufs + 1 tranche pain complet + thé vert',
+                        'Collation: 1 pomme + 10 amandes',
+                        'Déjeuner: 150g poulet grillé + quinoa + légumes vapeur',
+                        'Collation: Yaourt grec 0% + baies',
+                        'Dîner: 150g poisson blanc + patate douce + brocolis'
+                    ],
+                    'muscle_gain': [
+                        'Petit-déj: 3 œufs + 80g flocons avoine + 1 banane + beurre cacahuète',
+                        'Collation: Shake protéiné + 30g noix',
+                        'Déjeuner: 200g bœuf/poulet + riz complet + avocat + légumes',
+                        'Collation: Fromage blanc + miel + fruits secs',
+                        'Dîner: 200g saumon + patate douce + épinards + huile olive'
+                    ],
+                    'maintenance': [
+                        'Petit-déj: Muesli + lait + fruits rouges + graines',
+                        'Collation: 1 yaourt + 1 fruit',
+                        'Déjeuner: 180g poisson + riz basmati + légumes variés',
+                        'Collation: Pain complet + fromage blanc',
+                        'Dîner: Omelette légumes + salade verte + vinaigrette légère'
+                    ],
+                    'endurance': [
+                        'Petit-déj: Porridge avoine + fruits + miel + noix',
+                        'Collation: Barre céréales + banane',
+                        'Déjeuner: Pâtes complètes + 150g poulet + sauce tomate',
+                        'Collation: Smoothie fruits + lait',
+                        'Dîner: 180g dinde + quinoa + légumes rôtis'
+                    ]
+                }
+            };
+
+            return mealTemplates['standard'][goal] || mealTemplates['standard']['maintenance'];
+        }
+
+        // Fonction pour obtenir l'objectif de pas
+        function getStepsForGoal(goal, activityLevel) {
+            const baseSteps = {
+                'sedentary': 6000,
+                'light': 8000,
+                'moderate': 10000,
+                'very_active': 12000
+            };
+
+            const goalBonus = {
+                'weight_loss': 2000,
+                'muscle_gain': 0,
+                'maintenance': 1000,
+                'endurance': 3000
+            };
+
+            return baseSteps[activityLevel] + goalBonus[goal];
+        }
+
+        // Fonction pour obtenir un conseil quotidien
+        function getDailyTip(dayIndex) {
+            const tips = [
+                'Buvez un grand verre d\'eau au réveil pour relancer votre métabolisme.',
+                'Faites 5 min d\'étirements le matin pour améliorer votre mobilité.',
+                'Préparez vos repas de la journée pour éviter les tentations.',
+                'Marchez 10 min après chaque repas pour améliorer la digestion.',
+                'Couchez-vous tôt pour une récupération optimale.',
+                'Essayez une nouvelle activité physique aujourd\'hui.',
+                'Prenez ce jour de repos pour permettre à votre corps de récupérer.'
+            ];
+            return tips[dayIndex];
+        }
+
+        // Écouteur d'événement pour le bouton de génération
+        document.getElementById('generatePlanBtn').addEventListener('click', generatePersonalizedPlan);
+        
+        // Écouteur d'événement pour le bouton d'impression
+        document.getElementById('printBtn').addEventListener('click', function() {
+            window.print();
+        });
+    </script>
+
+</body>
+</html>
