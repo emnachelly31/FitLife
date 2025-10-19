@@ -10,6 +10,7 @@ from plotly.subplots import make_subplots
 import json
 from io import BytesIO
 import base64
+ 
 
 # Configuration de la page
 st.set_page_config(
@@ -383,6 +384,8 @@ def get_health_response(user_input):
             return response
     
     return "Je suis là pour vous aider avec vos questions de santé. Vous pouvez me demander des informations sur l'IMC, les calories, l'exercice, l'hydratation, le sommeil, le stress ou l'alimentation."
+
+ 
 
 # Interface principale
 def main():
