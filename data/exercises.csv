@@ -1,0 +1,25 @@
+name,muscle_group,difficulty,instructions,duration_reps
+Pompes,Poitrine,Débutant,"Placez vos mains à la largeur des épaules, gardez le corps droit et descendez jusqu'à ce que votre poitrine touche presque le sol, puis remontez",15 répétitions
+Pompes inclinées,Poitrine,Débutant,"Placez vos mains sur une surface élevée (banc, chaise), gardez le corps droit et effectuez des pompes",12 répétitions
+Développé couché haltères,Poitrine,Intermédiaire,"Allongé sur un banc, soulevez les haltères depuis la poitrine jusqu'à l'extension complète des bras",10 répétitions
+Pompes diamant,Poitrine,Avancé,"Formez un diamant avec vos mains sous la poitrine, gardez le corps droit et effectuez des pompes",8 répétitions
+Tractions,Dos,Débutant,"Suspendez-vous à une barre, tirez votre corps vers le haut jusqu'à ce que votre menton dépasse la barre, puis redescendez lentement",5 répétitions
+Rowing haltère,Dos,Intermédiaire,"Penchez-vous en avant, tirez l'haltère vers votre torse en contractant les omoplates",12 répétitions par bras
+Tractions lestées,Dos,Avancé,"Effectuez des tractions avec un poids supplémentaire attaché à votre corps",8 répétitions
+Élévations latérales,Épaules,Débutant,"Debout, levez les haltères sur les côtés jusqu'à la hauteur des épaules, puis redescendez lentement",15 répétitions
+Développé militaire,Épaules,Intermédiaire,"Debout ou assis, soulevez les haltères depuis les épaules jusqu'au-dessus de la tête",10 répétitions
+Élévations frontales,Épaules,Avancé,"Levez les haltères devant vous jusqu'à la hauteur des épaules, puis redescendez lentement",12 répétitions
+Curl biceps haltères,Bras,Débutant,"Debout, pliez les bras pour soulever les haltères vers les épaules, puis redescendez lentement",15 répétitions
+Marteau haltères,Bras,Intermédiaire,"Tenez les haltères avec une prise neutre, pliez les bras en gardant les coudes près du corps",12 répétitions
+Curl concentré,Bras,Avancé,"Assis, appuyez le coude contre la cuisse et effectuez des curls avec un haltère",10 répétitions par bras
+Squats,Jambes,Débutant,"Debout, descendez comme pour vous asseoir en gardant le dos droit, puis remontez",20 répétitions
+Fentes,Jambes,Intermédiaire,"Faites un grand pas en avant et descendez jusqu'à ce que votre genou arrière touche presque le sol",12 répétitions par jambe
+Squats sautés,Jambes,Avancé,"Effectuez des squats normaux mais sautez en remontant, atterrissez doucement",15 répétitions
+Planche,Abdominaux,Débutant,"En position de pompe, maintenez votre corps droit en équilibre sur les avant-bras",30 secondes
+Crunches,Abdominaux,Débutant,"Allongé sur le dos, relevez légèrement le haut du corps en contractant les abdominaux",20 répétitions
+Mountain climbers,Abdominaux,Intermédiaire,"En position de planche, alternez rapidement les genoux vers la poitrine",30 secondes
+Planche latérale,Abdominaux,Avancé,"Couché sur le côté, maintenez votre corps droit en équilibre sur un avant-bras",20 secondes par côté
+Burpees,Cardio,Débutant,"Commencez debout, descendez en position de pompe, faites une pompe, puis sautez vers le haut",10 répétitions
+Jumping jacks,Cardio,Débutant,"Debout, sautez en écartant les jambes et levant les bras au-dessus de la tête",30 secondes
+High knees,Cardio,Intermédiaire,"Courez sur place en levant les genoux le plus haut possible",30 secondes
+Sauts en étoile,Cardio,Avancé,"Sautez en écartant les jambes et les bras simultanément pour former une étoile",20 répétitions
