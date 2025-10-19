@@ -10,8 +10,42 @@ from plotly.subplots import make_subplots
 import json
 from io import BytesIO
 import base64
- 
+import torch
+from PIL import Image
+from torchvision import transforms
+import timm
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
+# Imports optionnels pour RAG (avec gestion d'erreur)
+try:
+    import fitz  # PyMuPDF
+    from tqdm.auto import tqdm
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+    from langchain_community.vectorstores import FAISS
+    from langchain_core.runnables import RunnablePassthrough
+    from langchain_core.output_parsers import StrOutputParser
+    from langchain_community.llms import HuggingFacePipeline
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    # Créer des objets factices pour éviter les erreurs
+    fitz = None
+    tqdm = None
+    RecursiveCharacterTextSplitter = None
+    HuggingFaceEmbeddings = None
+    FAISS = None
+    RetrievalQA = None
+    HuggingFacePipeline = None
+    AutoModelForSeq2SeqLM = None
+    AutoTokenizer = None
+    pipeline = None
+
+    
 # Configuration de la page
 st.set_page_config(
     page_title="HealthMate Pro",
@@ -385,7 +419,353 @@ def get_health_response(user_input):
     
     return "Je suis là pour vous aider avec vos questions de santé. Vous pouvez me demander des informations sur l'IMC, les calories, l'exercice, l'hydratation, le sommeil, le stress ou l'alimentation."
 
- 
+# =========================================================
+# 🧠 Fonctions d'Analyse Nutritionnelle IA
+# =========================================================
+
+def load_nutrition_database():
+    """Charge la base de données nutritionnelle étendue"""
+    try:
+        df = pd.read_csv('data/nutrition_database.csv', encoding='utf-8')
+        return df
+    except FileNotFoundError:
+        st.error("Fichier nutrition_database.csv non trouvé.")
+        return None
+    except Exception as e:
+        st.error(f"Erreur lors du chargement de la base nutritionnelle: {e}")
+        return None
+
+def setup_vision_model():
+    """Configure le modèle de vision pour la reconnaissance d'aliments"""
+    try:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = timm.create_model("mobilenetv3_small_100", pretrained=True).to(device).eval()
+        
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+        ])
+        
+        return model, transform, device
+    except Exception as e:
+        st.error(f"Erreur lors de l'initialisation du modèle de vision: {e}")
+        return None, None, None
+
+def predict_food_from_image(image, model, transform, device):
+    """
+    Utilise un modèle de vision pré-entraîné pour prédire le type d'aliment
+    """
+    try:
+        if isinstance(image, str):
+            img = Image.open(image).convert("RGB")
+        else:
+            img = image.convert("RGB")
+        
+        x = transform(img).unsqueeze(0).to(device)
+        with torch.no_grad():
+            logits = model(x)
+            label = logits.argmax(dim=1).item()
+        
+        # Mapping simple des labels vers des aliments (à améliorer avec un vrai dataset)
+        food_mapping = {
+            0: "pomme", 1: "banane", 2: "pain", 3: "fromage", 4: "poulet",
+            5: "œuf", 6: "poisson", 7: "légumes", 8: "viande", 9: "pâtes"
+        }
+        
+        predicted_food = food_mapping.get(label % 10, "aliment non identifié")
+        return f"Aliment prédit: {predicted_food} (classe {label})"
+    except Exception as e:
+        return f"Erreur lors de la prédiction: {e}"
+
+def setup_openai_chain():
+    """Configure la chaîne OpenAI pour l'analyse nutritionnelle"""
+    try:
+        # Vérifier si la clé API est configurée
+        if "OPENAI_API_KEY" not in os.environ:
+            return None
+        
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        
+        prompt = PromptTemplate.from_template("""
+Vous êtes un expert en nutrition et santé avec une expertise approfondie en analyse nutritionnelle.
+
+Description du repas à analyser: {meal_desc}
+
+Base de données nutritionnelle disponible:
+{nutrition_df}
+
+Votre mission: Analyser ce repas de manière complète et professionnelle.
+
+Retournez UNIQUEMENT un JSON valide avec cette structure exacte:
+{{
+  "health_score": [nombre entre 0 et 10],
+  "comment": "[Analyse détaillée et professionnelle du repas en 2-3 phrases]",
+  "suggestions": "[Conseils pratiques d'amélioration spécifiques en 1-2 phrases]",
+  "nutrients_analysis": "[Analyse des macronutriments et micronutriments en 1-2 phrases]",
+  "recommendations": "[Recommandations personnalisées pour optimiser la santé en 1-2 phrases]"
+}}
+
+Critères d'évaluation:
+- health_score: 0-3 (très malsain), 4-6 (moyen), 7-8 (bon), 9-10 (excellent)
+- Soyez précis, professionnel et constructif
+- Basez votre analyse sur les données nutritionnelles fournies
+- Proposez des améliorations concrètes et réalisables
+
+Répondez UNIQUEMENT en JSON, sans texte supplémentaire.
+""")
+        
+        chain = prompt | llm | StrOutputParser()
+        return chain
+    except Exception as e:
+        st.error(f"Erreur lors de la configuration d'OpenAI: {e}")
+        return None
+
+def analyze_meal_with_ai(meal_desc, nutrition_df, chain):
+    """Analyse un repas avec l'IA"""
+    try:
+        if chain is None:
+            return {
+                "health_score": 5,
+                "comment": "Analyse IA non disponible. Configurez votre clé API OpenAI.",
+                "suggestions": "Veuillez configurer votre clé API OpenAI pour une analyse complète.",
+                "nutrients_analysis": "Non disponible",
+                "recommendations": "Configurez OpenAI pour des recommandations personnalisées."
+            }
+        
+        # Préparer les données nutritionnelles de manière plus intelligente
+        nutrition_summary = nutrition_df.head(10).to_dict('records') if nutrition_df is not None else []
+        
+        result = chain.invoke({
+            "meal_desc": meal_desc, 
+            "nutrition_df": nutrition_summary
+        })
+        
+        # Nettoyer la réponse pour extraire le JSON
+        result_clean = result.strip()
+        
+        # Essayer de trouver le JSON dans la réponse
+        if result_clean.startswith('{') and result_clean.endswith('}'):
+            json_str = result_clean
+        else:
+            # Chercher le JSON dans la réponse
+            start_idx = result_clean.find('{')
+            end_idx = result_clean.rfind('}')
+            if start_idx != -1 and end_idx != -1:
+                json_str = result_clean[start_idx:end_idx+1]
+            else:
+                raise json.JSONDecodeError("JSON non trouvé", result_clean, 0)
+        
+        # Parser le JSON
+        analysis = json.loads(json_str)
+        
+        # Valider et nettoyer les données
+        return {
+            "health_score": max(0, min(10, int(analysis.get("health_score", 5)))),
+            "comment": analysis.get("comment", "Analyse non disponible"),
+            "suggestions": analysis.get("suggestions", "Aucune suggestion disponible"),
+            "nutrients_analysis": analysis.get("nutrients_analysis", "Analyse nutritionnelle non disponible"),
+            "recommendations": analysis.get("recommendations", "Aucune recommandation disponible")
+        }
+        
+    except json.JSONDecodeError as e:
+        # Fallback avec analyse basique
+        return {
+            "health_score": 5,
+            "comment": f"Analyse IA effectuée mais format de réponse non standard. Réponse: {result[:200]}...",
+            "suggestions": "L'IA a fourni une analyse mais le format n'était pas optimal. Réessayez.",
+            "nutrients_analysis": "Voir commentaire pour l'analyse complète",
+            "recommendations": "Consultez un nutritionniste pour des conseils personnalisés"
+        }
+    except Exception as e:
+        return {
+            "health_score": 5,
+            "comment": f"Erreur lors de l'analyse IA: {str(e)}",
+            "suggestions": "Veuillez réessayer ou vérifier votre connexion internet.",
+            "nutrients_analysis": "Non disponible en raison d'une erreur technique",
+            "recommendations": "Consultez un professionnel de santé pour des conseils nutritionnels"
+        }
+
+def get_food_nutrition_info(food_name, nutrition_df):
+    """Récupère les informations nutritionnelles d'un aliment"""
+    if nutrition_df is None:
+        return None
+    
+    # Recherche approximative de l'aliment
+    food_lower = food_name.lower()
+    matches = nutrition_df[nutrition_df['food'].str.lower().str.contains(food_lower, na=False)]
+    
+    if not matches.empty:
+        return matches.iloc[0].to_dict()
+    else:
+        # Recherche par mots-clés
+        keywords = food_lower.split()
+        for keyword in keywords:
+            matches = nutrition_df[nutrition_df['food'].str.lower().str.contains(keyword, na=False)]
+            if not matches.empty:
+                return matches.iloc[0].to_dict()
+    
+    return None
+
+def calculate_meal_nutrition(meal_items, nutrition_df):
+    """Calcule la nutrition totale d'un repas"""
+    total_nutrition = {
+        'calories': 0,
+        'protein': 0,
+        'fat': 0,
+        'fiber': 0,
+        'carbohydrates': 0,
+        'sodium': 0,
+        'calcium': 0,
+        'iron': 0,
+        'vitamin_c': 0
+    }
+    
+    for item in meal_items:
+        food_info = get_food_nutrition_info(item, nutrition_df)
+        if food_info:
+            for nutrient in total_nutrition:
+                if nutrient in food_info:
+                    total_nutrition[nutrient] += food_info[nutrient]
+    
+    return total_nutrition
+
+# =========================================================
+# 🧠 Fonctions RAG (Retrieval-Augmented Generation)
+# =========================================================
+
+def extract_text_from_pdf(pdf_file):
+    """Extrait le texte d'un fichier PDF"""
+    if not RAG_AVAILABLE:
+        st.error("Les packages RAG ne sont pas installés. Installez-les avec: pip install pymupdf langchain-community faiss-cpu sentence-transformers transformers")
+        return None
+    
+    try:
+        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        doc.close()
+        return text
+    except Exception as e:
+        st.error(f"Erreur lors de l'extraction du PDF: {e}")
+        return None
+
+def create_rag_system(pdf_texts):
+    """Crée le système RAG avec les textes PDF"""
+    if not RAG_AVAILABLE:
+        return None
+    
+    try:
+        # Combiner tous les textes
+        all_text = "\n\n".join(pdf_texts)
+        
+        if len(all_text) < 50:
+            st.warning("Texte insuffisant extrait des PDFs")
+            return None
+        
+        # Diviser le texte en chunks
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=150
+        )
+        texts = splitter.split_text(all_text)
+        
+        st.info(f"Texte divisé en {len(texts)} chunks")
+        
+        # Créer les embeddings
+        with st.spinner("Création des embeddings..."):
+            embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+        
+        # Créer la base vectorielle FAISS
+        with st.spinner("Construction de la base vectorielle..."):
+            db = FAISS.from_texts(texts, embeddings)
+            retriever = db.as_retriever(search_kwargs={"k": 4})
+        
+        # Charger le modèle local
+        with st.spinner("Chargement du modèle local..."):
+            model_name = "google/flan-t5-base"
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+            pipe = pipeline(
+                "text2text-generation", 
+                model=model, 
+                tokenizer=tokenizer, 
+                max_length=512
+            )
+            llm = HuggingFacePipeline(pipeline=pipe)
+        
+        # Créer le prompt template
+        from langchain_core.prompts import PromptTemplate
+        
+        prompt_template = PromptTemplate.from_template("""
+        Based on the following context, answer the question in French:
+
+        Context: {context}
+        
+        Question: {question}
+        
+        Answer in French based only on the context provided. If the answer is not in the context, say so clearly.
+        """)
+        
+        # Créer la chaîne RAG avec la nouvelle syntaxe
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+        
+        qa = (
+            {"context": retriever | format_docs, "question": RunnablePassthrough()}
+            | prompt_template
+            | llm
+            | StrOutputParser()
+        )
+        
+        return qa
+        
+    except Exception as e:
+        st.error(f"Erreur lors de la création du système RAG: {e}")
+        return None
+
+def get_rag_response(question, rag_system):
+    """Obtient une réponse du système RAG"""
+    if not rag_system:
+        return "Système RAG non disponible"
+    
+    try:
+        answer = rag_system.invoke(question)
+        return answer
+    except Exception as e:
+        return f"Erreur lors de la génération de la réponse: {e}"
+
+def save_rag_index(db, save_path="rag_index"):
+    """Sauvegarde l'index FAISS"""
+    if not RAG_AVAILABLE or not db:
+        return False
+    
+    try:
+        os.makedirs(save_path, exist_ok=True)
+        db.save_local(save_path)
+        return True
+    except Exception as e:
+        st.error(f"Erreur lors de la sauvegarde: {e}")
+        return False
+
+def load_rag_index(load_path="rag_index"):
+    """Charge un index FAISS existant"""
+    if not RAG_AVAILABLE:
+        return None
+    
+    try:
+        if os.path.exists(load_path):
+            embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+            db = FAISS.load_local(load_path, embeddings, allow_dangerous_deserialization=True)
+            return db
+        return None
+    except Exception as e:
+        st.error(f"Erreur lors du chargement: {e}")
+        return None
 
 # Interface principale
 def main():
@@ -405,8 +785,10 @@ def main():
             "🔥 Calculateur Calories", 
             "💪 Générateur d'Exercices", 
             "🤖 Chatbot Santé",
+            "🧠 Chatbot RAG Nutrition",
             "📈 Suivi des Progrès",
             "🥗 Nutrition Équilibrée",
+            "🧠 Analyse Nutritionnelle IA",
             "💧 Santé Globale",
             "🎯 Mes Objectifs",
             "📊 Dashboard"
@@ -739,6 +1121,7 @@ def main():
                 st.session_state.chat_history = []
                 st.rerun()
         
+    
         # Suggestions de questions
         st.subheader("💡 Questions suggérées")
         suggestions = [
@@ -765,6 +1148,208 @@ def main():
                 })
                 
                 st.rerun()
+    
+    # Chatbot RAG Nutrition
+    elif page == "🧠 Chatbot RAG Nutrition":
+        st.header("🧠 Chatbot RAG Nutrition")
+        st.markdown("Chatbot intelligent basé sur vos documents nutritionnels avec RAG (Retrieval-Augmented Generation).")
+        
+       
+        # Initialiser les variables de session pour RAG
+        if 'rag_system' not in st.session_state:
+            st.session_state.rag_system = None
+        if 'rag_documents' not in st.session_state:
+            st.session_state.rag_documents = []
+        if 'rag_chat_history' not in st.session_state:
+            st.session_state.rag_chat_history = []
+        
+        # Onglets pour différentes fonctionnalités
+        tab1, tab2, tab3 = st.tabs(["📄 Upload Documents", "💬 Chat RAG", "📊 Statut du Système"])
+        
+        with tab1:
+            st.subheader("📄 Upload de Documents Nutritionnels")
+            st.markdown("Téléchargez des PDFs de documents nutritionnels pour alimenter le chatbot RAG.")
+            
+            uploaded_files = st.file_uploader(
+                "Choisissez des fichiers PDF", 
+                type=['pdf'], 
+                accept_multiple_files=True,
+                help="Sélectionnez un ou plusieurs fichiers PDF contenant des informations nutritionnelles"
+            )
+            
+            if uploaded_files:
+                st.success(f"{len(uploaded_files)} fichier(s) sélectionné(s)")
+                
+                # Afficher les fichiers sélectionnés
+                for i, file in enumerate(uploaded_files):
+                    st.write(f"📄 {file.name} ({file.size} bytes)")
+                
+                if st.button("🧠 Construire le Système RAG", type="primary"):
+                    with st.spinner("Traitement des documents..."):
+                        pdf_texts = []
+                        
+                        for file in uploaded_files:
+                            st.write(f"Extraction du texte de {file.name}...")
+                            text = extract_text_from_pdf(file)
+                            if text:
+                                pdf_texts.append(text)
+                                st.success(f"✅ {file.name} traité avec succès")
+                            else:
+                                st.error(f"❌ Erreur lors du traitement de {file.name}")
+                        
+                        if pdf_texts:
+                            st.session_state.rag_documents = pdf_texts
+                            
+                            # Créer le système RAG
+                            rag_system = create_rag_system(pdf_texts)
+                            if rag_system:
+                                st.session_state.rag_system = rag_system
+                                st.success("🎉 Système RAG créé avec succès !")
+                                st.balloons()
+                            else:
+                                st.error("❌ Erreur lors de la création du système RAG")
+                        else:
+                            st.error("❌ Aucun texte valide extrait des PDFs")
+        
+        with tab2:
+            st.subheader("💬 Chat avec le Système RAG")
+            
+            if st.session_state.rag_system is None:
+                st.warning("⚠️ Aucun système RAG disponible. Veuillez d'abord uploader et traiter des documents PDF.")
+            else:
+                st.success("✅ Système RAG prêt ! Posez vos questions sur la nutrition.")
+                
+                # Zone de chat
+                chat_container = st.container()
+                
+                with chat_container:
+                    for message in st.session_state.rag_chat_history:
+                        if message["role"] == "user":
+                            st.markdown(f"""
+                            <div class="chat-message user-message">
+                                <strong>Vous :</strong> {message["content"]}
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""
+                            <div class="chat-message bot-message">
+                                <strong>RAG Nutrition :</strong> {message["content"]}
+                            </div>
+                            """, unsafe_allow_html=True)
+                
+                # Zone de saisie
+                user_question = st.text_input(
+                    "Posez votre question sur la nutrition :", 
+                    placeholder="Ex: Quels sont les bienfaits des protéines ? Comment calculer mes besoins caloriques ?"
+                )
+                
+                col1, col2 = st.columns([1, 4])
+                
+                with col1:
+                    if st.button("Envoyer", type="primary"):
+                        if user_question:
+                            # Ajouter la question de l'utilisateur
+                            st.session_state.rag_chat_history.append({
+                                "role": "user",
+                                "content": user_question
+                            })
+                            
+                            # Obtenir la réponse du RAG
+                            with st.spinner("Recherche dans les documents..."):
+                                rag_response = get_rag_response(user_question, st.session_state.rag_system)
+                            
+                            # Ajouter la réponse du RAG
+                            st.session_state.rag_chat_history.append({
+                                "role": "bot",
+                                "content": rag_response
+                            })
+                            
+                            st.rerun()
+                
+                with col2:
+                    if st.button("Effacer l'historique"):
+                        st.session_state.rag_chat_history = []
+                        st.rerun()
+                
+                # Suggestions de questions
+                st.subheader("💡 Questions Suggérées")
+                suggestions = [
+                    "Quels sont les macronutriments essentiels ?",
+                    "Comment calculer mes besoins en protéines ?",
+                    "Quels sont les bienfaits des fibres ?",
+                    "Comment équilibrer mon alimentation ?",
+                    "Quels aliments sont riches en vitamines ?",
+                    "Comment gérer l'hydratation ?"
+                ]
+                
+                cols = st.columns(3)
+                for i, suggestion in enumerate(suggestions):
+                    with cols[i % 3]:
+                        if st.button(suggestion, key=f"rag_suggestion_{i}"):
+                            st.session_state.rag_chat_history.append({
+                                "role": "user",
+                                "content": suggestion
+                            })
+                            
+                            with st.spinner("Recherche dans les documents..."):
+                                rag_response = get_rag_response(suggestion, st.session_state.rag_system)
+                            
+                            st.session_state.rag_chat_history.append({
+                                "role": "bot",
+                                "content": rag_response
+                            })
+                            
+                            st.rerun()
+        
+        with tab3:
+            st.subheader("📊 Statut du Système RAG")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 🔧 Configuration")
+                st.write(f"**Packages RAG disponibles :** {'✅ Oui' if RAG_AVAILABLE else '❌ Non'}")
+                st.write(f"**Système RAG initialisé :** {'✅ Oui' if st.session_state.rag_system else '❌ Non'}")
+                st.write(f"**Documents chargés :** {len(st.session_state.rag_documents)}")
+                st.write(f"**Messages dans l'historique :** {len(st.session_state.rag_chat_history)}")
+            
+            with col2:
+                st.markdown("#### 📈 Statistiques")
+                if st.session_state.rag_documents:
+                    total_chars = sum(len(doc) for doc in st.session_state.rag_documents)
+                    st.write(f"**Caractères traités :** {total_chars:,}")
+                    st.write(f"**Moyenne par document :** {total_chars // len(st.session_state.rag_documents):,} caractères")
+                
+                if st.session_state.rag_chat_history:
+                    user_messages = len([m for m in st.session_state.rag_chat_history if m["role"] == "user"])
+                    st.write(f"**Questions posées :** {user_messages}")
+                    st.write(f"**Réponses générées :** {len(st.session_state.rag_chat_history) - user_messages}")
+            
+            # Actions système
+            st.markdown("#### ⚙️ Actions Système")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("🔄 Recharger le Système"):
+                    if st.session_state.rag_documents:
+                        with st.spinner("Rechargement du système RAG..."):
+                            rag_system = create_rag_system(st.session_state.rag_documents)
+                            if rag_system:
+                                st.session_state.rag_system = rag_system
+                                st.success("Système RAG rechargé !")
+                            else:
+                                st.error("Erreur lors du rechargement")
+                    else:
+                        st.warning("Aucun document à recharger")
+            
+            with col2:
+                if st.button("🗑️ Réinitialiser"):
+                    st.session_state.rag_system = None
+                    st.session_state.rag_documents = []
+                    st.session_state.rag_chat_history = []
+                    st.success("Système RAG réinitialisé !")
+                    st.rerun()
     
     # Suivi des Progrès
     elif page == "📈 Suivi des Progrès":
@@ -969,6 +1554,284 @@ def main():
                     st.plotly_chart(nutrition_chart, use_container_width=True)
             else:
                 st.info("Aucune donnée nutritionnelle disponible.")
+    
+    # Analyse Nutritionnelle IA
+    elif page == "🧠 Analyse Nutritionnelle IA":
+        st.header("🧠 Analyse Nutritionnelle IA")
+        st.markdown("Analysez vos repas avec l'intelligence artificielle pour des conseils nutritionnels personnalisés.")
+        
+        # Configuration de la clé API OpenAI
+        st.subheader("🔑 Configuration OpenAI")
+        with st.expander("Configurer votre clé API OpenAI"):
+            api_key = st.text_input("Clé API OpenAI", type="password", 
+                                  help="Entrez votre clé API OpenAI pour activer l'analyse IA")
+            if st.button("Sauvegarder la clé API"):
+                if api_key:
+                    os.environ["OPENAI_API_KEY"] = api_key
+                    st.success("Clé API sauvegardée !")
+                else:
+                    st.error("Veuillez entrer une clé API valide.")
+        
+        # Charger la base de données nutritionnelle
+        nutrition_df = load_nutrition_database()
+        
+        if nutrition_df is not None:
+            # Onglets pour différentes fonctionnalités
+            tab1, tab2, tab3 = st.tabs(["📸 Analyse d'Image", "📝 Analyse de Texte", "🔍 Recherche d'Aliments"])
+            
+            with tab1:
+                st.subheader("📸 Analyse d'Image de Repas")
+                st.markdown("Téléchargez une photo de votre repas pour une analyse automatique.")
+                
+                uploaded_file = st.file_uploader("Choisissez une image", type=['png', 'jpg', 'jpeg'])
+                
+                if uploaded_file is not None:
+                    # Afficher l'image
+                    image = Image.open(uploaded_file)
+                    st.image(image, caption="Image téléchargée", use_container_width=True)
+                    
+                    # Bouton d'analyse
+                    if st.button("🧠 Analyser avec l'IA", key="analyze_image"):
+                        with st.spinner("Analyse en cours..."):
+                            # Configuration du modèle de vision
+                            model, transform, device = setup_vision_model()
+                            
+                            if model is not None:
+                                # Prédiction de l'aliment
+                                prediction = predict_food_from_image(image, model, transform, device)
+                                st.info(f"🔍 {prediction}")
+                                
+                                # Configuration de la chaîne OpenAI
+                                chain = setup_openai_chain()
+                                
+                                if chain is not None:
+                                    # Analyse avec l'IA
+                                    analysis = analyze_meal_with_ai(prediction, nutrition_df, chain)
+                                    
+                                    # Affichage des résultats
+                                    st.markdown("### 🤖 Analyse Nutritionnelle IA")
+                                    
+                                    # Score de santé avec indicateur visuel
+                                    health_score = analysis.get('health_score', 5)
+                                    score_color = "#2ecc71" if health_score >= 8 else "#f39c12" if health_score >= 6 else "#e74c3c"
+                                    score_emoji = "🌟" if health_score >= 8 else "👍" if health_score >= 6 else "⚠️"
+                                    
+                                    st.markdown(f"""
+                                    <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); 
+                                                color: white; padding: 2rem; border-radius: 1rem; 
+                                                box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 1rem 0;">
+                                        <h3 style="color: #3498db; font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">
+                                            {score_emoji} Score de Santé: <span style="color: {score_color}; font-weight: bold;">{health_score}/10</span>
+                                        </h3>
+                                        <p style="text-align: center; font-size: 1rem; opacity: 0.9;">
+                                            {"Excellent" if health_score >= 8 else "Bon" if health_score >= 6 else "À améliorer"}
+                                        </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Affichage en colonnes pour une meilleure lisibilité
+                                    col1, col2 = st.columns(2)
+                                    
+                                    with col1:
+                                        # Analyse détaillée
+                                        st.markdown("#### 💬 Analyse Détaillée")
+                                        st.markdown(f"""
+                                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                    border-left: 4px solid #3498db; margin: 1rem 0;">
+                                            <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                                {analysis.get('comment', 'Aucune analyse disponible')}
+                                            </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        # Analyse des nutriments
+                                        st.markdown("#### 🧪 Analyse des Nutriments")
+                                        st.markdown(f"""
+                                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                    border-left: 4px solid #e67e22; margin: 1rem 0;">
+                                            <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                                {analysis.get('nutrients_analysis', 'Non disponible')}
+                                            </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                    
+                                    with col2:
+                                        # Suggestions
+                                        st.markdown("#### 💡 Suggestions d'Amélioration")
+                                        st.markdown(f"""
+                                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                    border-left: 4px solid #27ae60; margin: 1rem 0;">
+                                            <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                                {analysis.get('suggestions', 'Aucune suggestion disponible')}
+                                            </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        # Recommandations
+                                        st.markdown("#### 🎯 Recommandations Personnalisées")
+                                        st.markdown(f"""
+                                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                    border-left: 4px solid #9b59b6; margin: 1rem 0;">
+                                            <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                                {analysis.get('recommendations', 'Non disponible')}
+                                            </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                else:
+                                    st.error("Clé API OpenAI non configurée. Veuillez configurer votre clé API pour utiliser l'analyse IA.")
+                            else:
+                                st.error("Erreur lors de l'initialisation du modèle de vision.")
+            
+            with tab2:
+                st.subheader("📝 Analyse de Description de Repas")
+                st.markdown("Décrivez votre repas et obtenez une analyse nutritionnelle personnalisée.")
+                
+                meal_description = st.text_area(
+                    "Décrivez votre repas", 
+                    placeholder="Ex: Salade de poulet grillé avec tomates, concombres, avocat et vinaigrette légère",
+                    height=100
+                )
+                
+                if st.button("🧠 Analyser le Repas", key="analyze_text"):
+                    if meal_description:
+                        with st.spinner("Analyse en cours..."):
+                            # Configuration de la chaîne OpenAI
+                            chain = setup_openai_chain()
+                            
+                            if chain is not None:
+                                # Analyse avec l'IA
+                                analysis = analyze_meal_with_ai(meal_description, nutrition_df, chain)
+                                
+                                # Affichage des résultats
+                                st.markdown("### 🤖 Analyse Nutritionnelle IA")
+                                
+                                # Score de santé avec indicateur visuel
+                                health_score = analysis.get('health_score', 5)
+                                score_color = "#2ecc71" if health_score >= 8 else "#f39c12" if health_score >= 6 else "#e74c3c"
+                                score_emoji = "🌟" if health_score >= 8 else "👍" if health_score >= 6 else "⚠️"
+                                
+                                st.markdown(f"""
+                                <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); 
+                                            color: white; padding: 2rem; border-radius: 1rem; 
+                                            box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 1rem 0;">
+                                    <h3 style="color: #3498db; font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">
+                                        {score_emoji} Score de Santé: <span style="color: {score_color}; font-weight: bold;">{health_score}/10</span>
+                                    </h3>
+                                    <p style="text-align: center; font-size: 1rem; opacity: 0.9;">
+                                        {"Excellent" if health_score >= 8 else "Bon" if health_score >= 6 else "À améliorer"}
+                                    </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Affichage en colonnes pour une meilleure lisibilité
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    # Analyse détaillée
+                                    st.markdown("#### 💬 Analyse Détaillée")
+                                    st.markdown(f"""
+                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                border-left: 4px solid #3498db; margin: 1rem 0;">
+                                        <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                            {analysis.get('comment', 'Aucune analyse disponible')}
+                                        </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Analyse des nutriments
+                                    st.markdown("#### 🧪 Analyse des Nutriments")
+                                    st.markdown(f"""
+                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                border-left: 4px solid #e67e22; margin: 1rem 0;">
+                                        <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                            {analysis.get('nutrients_analysis', 'Non disponible')}
+                                        </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                
+                                with col2:
+                                    # Suggestions
+                                    st.markdown("#### 💡 Suggestions d'Amélioration")
+                                    st.markdown(f"""
+                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                border-left: 4px solid #27ae60; margin: 1rem 0;">
+                                        <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                            {analysis.get('suggestions', 'Aucune suggestion disponible')}
+                                        </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Recommandations
+                                    st.markdown("#### 🎯 Recommandations Personnalisées")
+                                    st.markdown(f"""
+                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; 
+                                                border-left: 4px solid #9b59b6; margin: 1rem 0;">
+                                        <p style="margin: 0; line-height: 1.6; color: #2c3e50;">
+                                            {analysis.get('recommendations', 'Non disponible')}
+                                        </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            else:
+                                st.error("Clé API OpenAI non configurée. Veuillez configurer votre clé API pour utiliser l'analyse IA.")
+                    else:
+                        st.error("Veuillez décrire votre repas.")
+            
+            with tab3:
+                st.subheader("🔍 Recherche d'Informations Nutritionnelles")
+                st.markdown("Recherchez des informations détaillées sur des aliments spécifiques.")
+                
+                # Recherche d'aliment
+                search_term = st.text_input("Rechercher un aliment", placeholder="Ex: poulet, pomme, riz")
+                
+                if search_term:
+                    food_info = get_food_nutrition_info(search_term, nutrition_df)
+                    
+                    if food_info:
+                        st.markdown("### 📊 Informations Nutritionnelles")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("Calories", f"{food_info['calories']} kcal")
+                        with col2:
+                            st.metric("Protéines", f"{food_info['protein']} g")
+                        with col3:
+                            st.metric("Lipides", f"{food_info['fat']} g")
+                        with col4:
+                            st.metric("Glucides", f"{food_info['carbohydrates']} g")
+                        
+                        # Graphique nutritionnel
+                        nutrients = ['protein', 'fat', 'carbohydrates', 'fiber']
+                        values = [food_info[n] for n in nutrients]
+                        labels = ['Protéines', 'Lipides', 'Glucides', 'Fibres']
+                        
+                        fig = go.Figure(data=[go.Pie(
+                            labels=labels,
+                            values=values,
+                            hole=0.3
+                        )])
+                        fig.update_layout(title=f"Répartition Nutritionnelle - {food_info['food'].title()}")
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Tableau détaillé
+                        st.markdown("### 📋 Détails Complets")
+                        detailed_info = {
+                            'Nutriment': ['Calories', 'Protéines', 'Lipides', 'Fibres', 'Glucides', 
+                                         'Sodium', 'Calcium', 'Fer', 'Vitamine C'],
+                            'Valeur': [food_info['calories'], food_info['protein'], food_info['fat'], 
+                                      food_info['fiber'], food_info['carbohydrates'], food_info['sodium'],
+                                      food_info['calcium'], food_info['iron'], food_info['vitamin_c']],
+                            'Unité': ['kcal', 'g', 'g', 'g', 'g', 'mg', 'mg', 'mg', 'mg']
+                        }
+                        
+                        df_detailed = pd.DataFrame(detailed_info)
+                        st.dataframe(df_detailed, use_container_width=True)
+                    else:
+                        st.warning(f"Aucune information trouvée pour '{search_term}'. Essayez avec un autre terme.")
+                
+                
+        else:
+            st.error("Impossible de charger la base de données nutritionnelle.")
     
     # Santé Globale
     elif page == "💧 Santé Globale":
