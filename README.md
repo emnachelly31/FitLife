@@ -3,7 +3,7 @@
 **Votre compagnon santé intelligent avec IA et RAG**
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28.0+-red)](https://streamlit.io/)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue)](https://python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue)](https://python.org/)
 [![LangChain](https://img.shields.io/badge/LangChain-1.0.0+-green)](https://langchain.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange)](https://openai.com/)
 
@@ -330,6 +330,7 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 3. Commit vos changements
 4. Push vers la branche
 5. Ouvrir une Pull Request
+
 
 
 **💪 HealthMate Pro - Transformez Votre Santé, Transformez Votre Vie**
